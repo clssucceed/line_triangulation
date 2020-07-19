@@ -30,73 +30,71 @@ double AngleBetweenTwoVectors(const Eigen::Vector3d& v1, const Eigen::Vector3d& 
 void GenerateTwoPoints(const Eigen::Vector3d &ni, Eigen::Vector3d& si, Eigen::Vector3d& ei) {
     assert(std::fabs(ni(0)) > 1.0e-6 || std::fabs(ni(1)) > 1.0e-6);
     if (std::fabs(ni(0)) < 1.0e-6) {
+        // 图像中的水平线
         si(1) = -ni(2) / ni(1);
-        assert(std::fabs(si(1)) < kImageHeight * 0.5);
+        assert(std::fabs(si(1)) < kImageHeight * 0.5 / kFocalLength);
         ei(1) = si(1);
         si(0) = -kImageWidth * 0.25 / kFocalLength;
         ei(0) = -si(0);
-        si = si;
-        ei = ei; 
         si(2) = 1;
         ei(2) = 1;
         std::cout << "ni: " << ni.transpose() << std::endl;
         std::cout << "si: " << si.transpose() << std::endl;
         double si_theta = ni.dot(si) / (ni.norm() * si.norm());
-        std::cout << "$$$$$$$$$$$" << "si_theta:" << si_theta << std::endl;
+        std::cout << "si_theta:" << si_theta << std::endl;
         assert(si_theta < 1.0e-6);
         std::cout << "ei:" << ei.transpose() << std::endl;
         double ei_theta = ni.dot(ei) / (ni.norm() * ei.norm());
-        std::cout << "$$$$$$$$$$$" << "ei_theta:" << ei_theta << std::endl;
+        std::cout << "ei_theta:" << ei_theta << std::endl;
         assert(ei_theta < 1.0e-6);
         return; 
     }
     if (std::fabs(ni(1)) < 1.0e-6) {
+        // 图像中的竖直线
         si(0) = -ni(2) / ni(0);
-        assert(std::fabs(si(0)) < kImageWidth * 0.5);
+        assert(std::fabs(si(0)) < kImageWidth * 0.5 / kFocalLength);
         ei(0) = si(0);
         si(1) = -kImageHeight * 0.25 / kFocalLength;
         ei(1) = -si(1);
-        si = si;
-        ei = ei; 
         si(2) = 1;
         ei(2) = 1;
         std::cout << "ni: " << ni.transpose() << std::endl;
         std::cout << "si: " << si.transpose() << std::endl;
         double si_theta = ni.dot(si) / (ni.norm() * si.norm());
-        std::cout << "$$$$$$$$$$$" << "si_theta:" << si_theta << std::endl;
+        std::cout << "si_theta:" << si_theta << std::endl;
         assert(si_theta < 1.0e-6);
         std::cout << "ei:" << ei.transpose() << std::endl;
         double ei_theta = ni.dot(ei) / (ni.norm() * ei.norm());
-        std::cout << "$$$$$$$$$$$" << "ei_theta:" << ei_theta << std::endl;
+        std::cout << "ei_theta:" << ei_theta << std::endl;
         assert(ei_theta < 1.0e-6);
         return; 
     }
-    double si_x = -kImageWidth * 0.5 - 1, si_y = -kImageHeight * 0.5 - 1;
-    while (si_x < -kImageWidth * 0.5 || si_x > kImageWidth * 0.5 || 
-           si_y < -kImageHeight * 0.5 || si_y > kImageHeight * 0.5) {
+    double si_x = (-kImageWidth * 0.5 - 1) / kFocalLength, si_y = (-kImageHeight * 0.5 - 1) / kFocalLength;
+    while (si_x < (-kImageWidth * 0.5) / kFocalLength || si_x > (kImageWidth * 0.5) / kFocalLength|| 
+           si_y < (-kImageHeight * 0.5) / kFocalLength || si_y > (kImageHeight * 0.5) / kFocalLength) {
         si_x = (std::rand() % static_cast<int>(kImageWidth)) - kImageWidth * 0.5;
         si_x /= kFocalLength;
         si_y = -(ni(0) * si_x + ni(2)) / ni(1);
-        std::cout << si_x << "&&&&&" << si_y << std::endl;
+        std::cout << "si_x: " << si_x << ", si_y: " << si_y << std::endl;
     }
     si = Eigen::Vector3d(si_x, si_y, 1);
-    double ei_x = -kImageHeight * 0.5 - 1, ei_y = -kImageHeight * 0.5 - 1;
-    while (ei_x < -kImageHeight * 0.5 || ei_x > kImageHeight * 0.5 || 
-           ei_y < -kImageHeight * 0.5 || ei_y > kImageHeight * 0.5 || std::fabs(si_x - si_y) < 10) {
+    double ei_x = (-kImageHeight * 0.5 - 1) / kFocalLength, ei_y = (-kImageHeight * 0.5 - 1) / kFocalLength;
+    while (ei_x * kFocalLength < -kImageHeight * 0.5 || ei_x * kFocalLength > kImageHeight * 0.5 || 
+           ei_y * kFocalLength < -kImageHeight * 0.5 || ei_y * kFocalLength > kImageHeight * 0.5 ||
+           std::fabs(si_x - si_y) < 10) {
         ei_x = (std::rand() % static_cast<int>(kImageHeight)) - kImageHeight * 0.5;
         ei_x /= kFocalLength;
         ei_y = -(ni(0) * ei_x + ni(2)) / ni(1);
-        std::cout << ei_x << "&&&&&" << ei_y << std::endl;
+        std::cout << "ei_x: " << ei_x << ", ei_y: " << ei_y << std::endl;
     }
-    ei = Eigen::Vector3d(ei_x, ei_y, 1);
     std::cout << "ni: " << ni.transpose() << std::endl;
     std::cout << "si: " << si.transpose() << std::endl;
     double si_theta = ni.dot(si) / (ni.norm() * si.norm());
-    std::cout << "$$$$$$$$$$$" << "si_theta:" << si_theta << std::endl;
+    std::cout << "si_theta:" << si_theta << std::endl;
     assert(si_theta < 1.0e-6);
     std::cout << "ei:" << ei.transpose() << std::endl;
     double ei_theta = ni.dot(ei) / (ni.norm() * ei.norm());
-    std::cout << "$$$$$$$$$$$" << "ei_theta:" << ei_theta << std::endl;
+    std::cout << "ei_theta:" << ei_theta << std::endl;
     assert(ei_theta < 1.0e-6);
 }
 

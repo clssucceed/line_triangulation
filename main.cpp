@@ -4,6 +4,7 @@
 #include <array>
 #include <ctime>
 #include <cmath>
+#include <unistd.h>
 
 constexpr double kImageWidth = 1280;
 constexpr double kImageHeight = 720;
@@ -76,17 +77,20 @@ void GenerateTwoPoints(const Eigen::Vector3d &ni, Eigen::Vector3d& si, Eigen::Ve
         si_x /= kFocalLength;
         si_y = -(ni(0) * si_x + ni(2)) / ni(1);
         std::cout << "si_x: " << si_x << ", si_y: " << si_y << std::endl;
+        // sleep(1);
     }
     si = Eigen::Vector3d(si_x, si_y, 1);
     double ei_x = (-kImageHeight * 0.5 - 1) / kFocalLength, ei_y = (-kImageHeight * 0.5 - 1) / kFocalLength;
     while (ei_x * kFocalLength < -kImageHeight * 0.5 || ei_x * kFocalLength > kImageHeight * 0.5 || 
            ei_y * kFocalLength < -kImageHeight * 0.5 || ei_y * kFocalLength > kImageHeight * 0.5 ||
-           std::fabs(si_x - si_y) < 10) {
+           std::fabs(si_x - ei_x) < 10 / kFocalLength) {
         ei_x = (std::rand() % static_cast<int>(kImageHeight)) - kImageHeight * 0.5;
         ei_x /= kFocalLength;
         ei_y = -(ni(0) * ei_x + ni(2)) / ni(1);
         std::cout << "ei_x: " << ei_x << ", ei_y: " << ei_y << std::endl;
+        // sleep(1);
     }
+    ei = Eigen::Vector3d(ei_x, ei_y, 1);
     std::cout << "ni: " << ni.transpose() << std::endl;
     std::cout << "si: " << si.transpose() << std::endl;
     double si_theta = ni.dot(si) / (ni.norm() * si.norm());
@@ -120,8 +124,8 @@ int main(int, char**) {
     const Eigen::Vector3d nx(0, 10, -1.6); // nx和cx联合表示首帧相机系下前方10m的混凝土交界处
     const Eigen::Vector3d ny(10, 0, 5); // ny和cy联合表示首帧相机系下前方10m左侧5m的路灯杆
     const Eigen::Vector3d nz(1.6, 3, 0); // nz和cz联合表示首帧相机系下左侧3m的车道线
-    Eigen::Vector3d d = dy;
-    Eigen::Vector3d n = ny;
+    Eigen::Vector3d d = dz;
+    Eigen::Vector3d n = nz;
     // std::cout << n.transpose() << std::endl;
     // std::cout << d.transpose() << std::endl;
     // std::cout << n.transpose() * d << std::endl;

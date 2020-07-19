@@ -169,13 +169,18 @@ int main(int, char**) {
     }
 
     // step 3: 生成线性求解系数矩阵,每一行是pi^T[Ri, [ti]_{\times}Ri][n, d]^T = 0;
-    Eigen::Matrix<double, 2 * kObvNum, 6> A;
+    Eigen::Matrix<double, 4 * kObvNum, 6> A;
     for (int i = 0; i < kObvNum; ++i) {
         Eigen::Matrix<double, 3, 6> temp;
         temp.leftCols(3) = Rs.at(i);
         temp.rightCols(3) = SkewMatrix(ts.at(i)) * Rs.at(i); 
-        A.row(i * 2) = ses.at(i).first.transpose() * temp; 
-        A.row(i * 2 + 1) = ses.at(i).second.transpose() * temp; 
+        A.row(i * 4) = ses.at(i).first.transpose() * temp; 
+        A.row(i * 4 + 1) = ses.at(i).second.transpose() * temp; 
+        Eigen::Matrix<double, 3, 6> temp_r;
+        temp_r.leftCols(3) = Rs_r.at(i);
+        temp_r.rightCols(3) = SkewMatrix(ts_r.at(i)) * Rs_r.at(i); 
+        A.row(i * 4 + 2) = ses_r.at(i).first.transpose() * temp_r; 
+        A.row(i * 4 + 3) = ses_r.at(i).second.transpose() * temp_r; 
     }
     std::cout << "###########################################" << std::endl; 
     std::cout << "A:" << std::endl << A << std::endl;
@@ -185,7 +190,7 @@ int main(int, char**) {
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
     std::cout << "A.singular_values: " << svd.singularValues().transpose() << std::endl;
     std::cout << "svd.V: " << std::endl << svd.matrixV() << std::endl;
-    Eigen::VectorXd L_est = svd.matrixV().col(4);
+    Eigen::VectorXd L_est = svd.matrixV().col(5);
     std::cout << "L_est: " << L_est.normalized().transpose() << std::endl;
     Eigen::Matrix<double, 6, 1> L_gt;
     L_gt << n, d;

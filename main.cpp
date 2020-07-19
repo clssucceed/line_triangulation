@@ -9,7 +9,11 @@
 constexpr double kImageWidth = 1280;
 constexpr double kImageHeight = 720;
 constexpr double kFocalLength = 800;
+// 1pixel的噪声会产生5度以内的方向误差，对点到直线的距离的影响在1%以内
 constexpr double noise = 0.0 / kFocalLength;
+// Question: 单目时V倒数第二个列向量才是真正的解; 双目时V的倒数第一个列向量是真正的解
+constexpr bool kUseStereo = true;
+constexpr int kVIndex = 5;
 
 Eigen::Matrix3d SkewMatrix(const Eigen::Vector3d& v) {
     Eigen::Matrix3d m;
@@ -124,8 +128,8 @@ int main(int, char**) {
     const Eigen::Vector3d nx(0, 10, -1.6); // nx和cx联合表示首帧相机系下前方10m的混凝土交界处
     const Eigen::Vector3d ny(10, 0, 5); // ny和cy联合表示首帧相机系下前方10m左侧5m的路灯杆
     const Eigen::Vector3d nz(1.6, 3, 0); // nz和cz联合表示首帧相机系下左侧3m的车道线
-    Eigen::Vector3d d = dz;
-    Eigen::Vector3d n = nz;
+    Eigen::Vector3d d = dy;
+    Eigen::Vector3d n = ny;
     // std::cout << n.transpose() << std::endl;
     // std::cout << d.transpose() << std::endl;
     // std::cout << n.transpose() * d << std::endl;
@@ -173,18 +177,32 @@ int main(int, char**) {
     }
 
     // step 3: 生成线性求解系数矩阵,每一行是pi^T[Ri, [ti]_{\times}Ri][n, d]^T = 0;
-    Eigen::Matrix<double, 4 * kObvNum, 6> A;
-    for (int i = 0; i < kObvNum; ++i) {
-        Eigen::Matrix<double, 3, 6> temp;
-        temp.leftCols(3) = Rs.at(i);
-        temp.rightCols(3) = SkewMatrix(ts.at(i)) * Rs.at(i); 
-        A.row(i * 4) = ses.at(i).first.transpose() * temp; 
-        A.row(i * 4 + 1) = ses.at(i).second.transpose() * temp; 
-        Eigen::Matrix<double, 3, 6> temp_r;
-        temp_r.leftCols(3) = Rs_r.at(i);
-        temp_r.rightCols(3) = SkewMatrix(ts_r.at(i)) * Rs_r.at(i); 
-        A.row(i * 4 + 2) = ses_r.at(i).first.transpose() * temp_r; 
-        A.row(i * 4 + 3) = ses_r.at(i).second.transpose() * temp_r; 
+    Eigen::MatrixXd A;
+    if (kUseStereo) {
+        Eigen::Matrix<double, 4 * kObvNum, 6> A_temp;
+        for (int i = 0; i < kObvNum; ++i) {
+            Eigen::Matrix<double, 3, 6> temp;
+            temp.leftCols(3) = Rs.at(i);
+            temp.rightCols(3) = SkewMatrix(ts.at(i)) * Rs.at(i); 
+            A_temp.row(i * 4) = ses.at(i).first.transpose() * temp; 
+            A_temp.row(i * 4 + 1) = ses.at(i).second.transpose() * temp; 
+            Eigen::Matrix<double, 3, 6> temp_r;
+            temp_r.leftCols(3) = Rs_r.at(i);
+            temp_r.rightCols(3) = SkewMatrix(ts_r.at(i)) * Rs_r.at(i); 
+            A_temp.row(i * 4 + 2) = ses_r.at(i).first.transpose() * temp_r; 
+            A_temp.row(i * 4 + 3) = ses_r.at(i).second.transpose() * temp_r; 
+        }
+        A = A_temp;
+    } else {
+        Eigen::Matrix<double, 2 * kObvNum, 6> A_temp;
+        for (int i = 0; i < kObvNum; ++i) {
+            Eigen::Matrix<double, 3, 6> temp;
+            temp.leftCols(3) = Rs.at(i);
+            temp.rightCols(3) = SkewMatrix(ts.at(i)) * Rs.at(i); 
+            A_temp.row(i * 2) = ses.at(i).first.transpose() * temp; 
+            A_temp.row(i * 2 + 1) = ses.at(i).second.transpose() * temp; 
+        }
+        A = A_temp;
     }
     std::cout << "###########################################" << std::endl; 
     std::cout << "A:" << std::endl << A << std::endl;
@@ -194,7 +212,7 @@ int main(int, char**) {
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
     std::cout << "A.singular_values: " << svd.singularValues().transpose() << std::endl;
     std::cout << "svd.V: " << std::endl << svd.matrixV() << std::endl;
-    Eigen::VectorXd L_est = svd.matrixV().col(5);
+    Eigen::VectorXd L_est = svd.matrixV().col(kVIndex);
     std::cout << "L_est: " << L_est.normalized().transpose() << std::endl;
     Eigen::Matrix<double, 6, 1> L_gt;
     L_gt << n, d;

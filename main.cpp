@@ -9,11 +9,12 @@
 constexpr double kImageWidth = 1280;
 constexpr double kImageHeight = 720;
 constexpr double kFocalLength = 800;
+constexpr int kObvNum = 3;
 // 1pixel的噪声会产生5度以内的方向误差，对点到直线的距离的影响在1%以内
-constexpr double noise = 0.0 / kFocalLength;
+constexpr double kNoise = 0.0 / kFocalLength;
 // Question: 单目时V倒数第二个列向量才是真正的解; 双目时V的倒数第一个列向量是真正的解
-constexpr bool kUseStereo = true;
-constexpr int kVIndex = 5;
+constexpr bool kUseStereo = false;
+constexpr int kVIndex = kUseStereo ? 5 : 4;
 
 Eigen::Matrix3d SkewMatrix(const Eigen::Vector3d& v) {
     Eigen::Matrix3d m;
@@ -113,8 +114,8 @@ void GenerateLineObv(const Eigen::Matrix3d& Ri, const Eigen::Vector3d& ti,
      GenerateTwoPoints(ni, si, ei);
      std::cout << "si: " << si.transpose() << std::endl;
      std::cout << "ei: " << ei.transpose() << std::endl;
-     si.head(2) = si.head(2) + Eigen::Vector2d::Random().normalized() * noise;
-     ei.head(2) = ei.head(2) + Eigen::Vector2d::Random().normalized() * noise;
+     si.head(2) = si.head(2) + Eigen::Vector2d::Random().normalized() * kNoise;
+     ei.head(2) = ei.head(2) + Eigen::Vector2d::Random().normalized() * kNoise;
      std::cout << "si_noised: " << si.transpose() << std::endl;
      std::cout << "ei_noised: " << ei.transpose() << std::endl;
 }
@@ -138,7 +139,6 @@ int main(int, char**) {
     assert(std::fabs(AngleBetweenTwoVectors(n, d) - 90) < 1.0e-6);
 
     // step 2: 根据高速典型运动设置Ri, ti并且同时生成si, ei 
-    constexpr int kObvNum = 3;
     std::array<Eigen::Matrix3d, kObvNum> Rs;
     std::array<Eigen::Vector3d, kObvNum> ts;
     std::array<std::pair<Eigen::Vector3d, Eigen::Vector3d>, kObvNum> ses; // normalized

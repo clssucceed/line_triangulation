@@ -11,9 +11,9 @@ constexpr double kImageHeight = 720;
 constexpr double kFocalLength = 800;
 constexpr int kObvNum = 3;
 // 1pixel的噪声会产生5度以内的方向误差，对点到直线的距离的影响在1%以内
-constexpr double kNoise = 0.0 / kFocalLength;
+constexpr double kNoise = 1.0 / kFocalLength;
 // Question: 单目时V倒数第二个列向量才是真正的解; 双目时V的倒数第一个列向量是真正的解
-constexpr bool kUseStereo = false;
+constexpr bool kUseStereo = true;
 constexpr int kVIndex = kUseStereo ? 5 : 4;
 
 Eigen::Matrix3d SkewMatrix(const Eigen::Vector3d& v) {
@@ -36,6 +36,7 @@ double AngleBetweenTwoVectors(const Eigen::Vector3d& v1, const Eigen::Vector3d& 
 void GenerateTwoPoints(const Eigen::Vector3d &ni, Eigen::Vector3d& si, Eigen::Vector3d& ei) {
     assert(std::fabs(ni(0)) > 1.0e-6 || std::fabs(ni(1)) > 1.0e-6);
     if (std::fabs(ni(0)) < 1.0e-6) {
+        assert(false);
         // 图像中的水平线
         si(1) = -ni(2) / ni(1);
         assert(std::fabs(si(1)) < kImageHeight * 0.5 / kFocalLength);
@@ -56,6 +57,7 @@ void GenerateTwoPoints(const Eigen::Vector3d &ni, Eigen::Vector3d& si, Eigen::Ve
         return; 
     }
     if (std::fabs(ni(1)) < 1.0e-6) {
+        assert(false);
         // 图像中的竖直线
         si(0) = -ni(2) / ni(0);
         assert(std::fabs(si(0)) < kImageWidth * 0.5 / kFocalLength);
@@ -129,8 +131,8 @@ int main(int, char**) {
     const Eigen::Vector3d nx(0, 10, -1.6); // nx和cx联合表示首帧相机系下前方10m的混凝土交界处
     const Eigen::Vector3d ny(10, 0, 5); // ny和cy联合表示首帧相机系下前方10m左侧5m的路灯杆
     const Eigen::Vector3d nz(1.6, 3, 0); // nz和cz联合表示首帧相机系下左侧3m的车道线
-    Eigen::Vector3d d = dy;
-    Eigen::Vector3d n = ny;
+    Eigen::Vector3d d = dz;
+    Eigen::Vector3d n = nz;
     // std::cout << n.transpose() << std::endl;
     // std::cout << d.transpose() << std::endl;
     // std::cout << n.transpose() * d << std::endl;
